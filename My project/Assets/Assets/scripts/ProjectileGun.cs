@@ -23,12 +23,7 @@ public class ProjectileGun : MonoBehaviour
     public float reloadTime = 1.2f;
 
     [Header("Damage Override (optional)")]
-    public int damageOverride = -1;      // if >=0, sets Bullet.damage on spawn
-
-    [Header("Animator (optional)")]
-    public Animator animator;            // set if your 3D gun has animations
-    public string fireTrigger = "Fire";
-    public string reloadTrigger = "Reload";
+    public int damageOverride = -1;      // if ≥0 set Bullet.damage on spawn
 
     [Header("Input")]
     public InputAction fire;
@@ -81,7 +76,6 @@ public class ProjectileGun : MonoBehaviour
         if (!unlimitedAmmo) ammo--;
 
         if (fireAudio) fireAudio.Play();
-        if (animator && !string.IsNullOrEmpty(fireTrigger)) animator.SetTrigger(fireTrigger);
 
         Transform cam = playerCam.transform;
         Vector3 dir = ApplySpread(cam.forward, spreadDegrees, cam);
@@ -94,7 +88,7 @@ public class ProjectileGun : MonoBehaviour
         {
             b.Init(dir * muzzleVelocity);
             b.maxLife = maxLifeSeconds;
-            if (damageOverride >= 0) b.damage = damageOverride; // assumes your Bullet has 'damage'
+            if (damageOverride >= 0) b.damage = damageOverride;   // optional
         }
     }
 
@@ -112,7 +106,6 @@ public class ProjectileGun : MonoBehaviour
         if (reloading || reserveAmmo <= 0 || ammo == magSize) return;
 
         reloading = true;
-        if (animator && !string.IsNullOrEmpty(reloadTrigger)) animator.SetTrigger(reloadTrigger);
         Invoke(nameof(FinishReload), reloadTime);
     }
 
@@ -125,7 +118,7 @@ public class ProjectileGun : MonoBehaviour
         reloading = false;
     }
 
-    // Expose ammo for UI
+    // UI getters
     public int AmmoInMag => unlimitedAmmo ? int.MaxValue : ammo;
     public int ReserveAmmo => unlimitedAmmo ? int.MaxValue : reserveAmmo;
     public bool IsReloading => reloading;
