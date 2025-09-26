@@ -34,5 +34,9 @@ public class WeaponSwitcher : MonoBehaviour
 
         currentIndex = i;
         if (overlay && weapons[i]) overlay.BindToGun(weapons[i]);
+
+        var xhair = FindObjectOfType<SimpleCrosshairGUI>();
+        if (xhair) xhair.BindToGun(weapons[i]);
+
     }
 }
