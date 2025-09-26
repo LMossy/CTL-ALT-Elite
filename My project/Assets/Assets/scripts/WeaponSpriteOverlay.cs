@@ -21,7 +21,7 @@ public class WeaponSpriteOverlay : MonoBehaviour
     {
         if (!img) img = GetComponent<Image>();
         if (!playerCam) playerCam = Camera.main;
-        if (idleSprite) img.sprite = idleSprite;
+        img.sprite = idleSprite;
     }
 
     void OnEnable() { fire.Enable(); }
@@ -48,15 +48,5 @@ public class WeaponSpriteOverlay : MonoBehaviour
         }
         img.sprite = idleSprite;
         playing = false;
-    }
-
-    // 👇 This is the method your HitScanGun should call
-    public void TriggerFire()
-    {
-        if (!playing)
-        {
-            playing = true;
-            StartCoroutine(PlayFireOnce());
-        }
     }
 }
