@@ -1,40 +1,66 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using System.Collections;
+using TMPro;                 // ← add
 
 public class WeaponSpriteOverlay : MonoBehaviour
 {
     [Header("Refs")]
-    public Camera playerCam;                    // your FPS camera
-    public Image img;                           // the UI Image under the Canvas
-    public Sprite idleSprite;                   // resting frame
-    public Sprite[] fireFrames;                 // sliced animation frames, in order
-    public float fireFps = 16f;                 // playback speed
+    public Camera playerCam;
+    public Image img;
+
+    [Header("Sprites")]
+    public Sprite idleSprite;
+    public Sprite[] fireFrames;
+    public float fireFps = 16f;
 
     [Header("Input (New Input System)")]
-    public InputAction fire;                    // Button (Mouse L, RT)
+    public InputAction fire;
 
-    bool playing;
+    [Header("Gun + UI")]
+    public ProjectileGun gun;               // ← assign your Gun object
+    public TextMeshProUGUI ammoText;        // ← assign a TMP text under the Canvas
+
+    [Header("Reload Anim")]
+    public float reloadDropPx = 80f;        // how far to drop the gun (UI pixels)
+    public AnimationCurve reloadCurve =     // gentle ease in/out
+        AnimationCurve.EaseInOut(0,0,1,1);
+
+    bool playing;           // fire animation gate
+    bool reloadPlaying;     // reload anim gate
+    RectTransform rt;
+    Vector2 restPos;
 
     void Awake()
     {
         if (!img) img = GetComponent<Image>();
         if (!playerCam) playerCam = Camera.main;
-        if (idleSprite) img.sprite = idleSprite;
+        img.sprite = idleSprite;
+
+        rt = (RectTransform)transform;
+        restPos = rt.anchoredPosition;     // where the sprite normally sits
     }
 
-    void OnEnable() { fire.Enable(); }
-    void OnDisable() { fire.Disable(); }
+    void OnEnable(){ fire.Enable(); }
+    void OnDisable(){ fire.Disable(); }
 
     void Update()
     {
-        // Play once per click; for full-auto, hold will retrigger when done
+        // Fire animation
         if (!playing && fire.WasPressedThisFrame())
             StartCoroutine(PlayFireOnce());
+
+        // Ammo label
+        if (ammoText && gun)
+            ammoText.text = gun.IsReloading ? "RELOADING…" 
+                                            : $"{gun.AmmoInMag} / {gun.ReserveAmmo}";
+
+        // Start reload drop when gun enters reloading
+        if (gun && gun.IsReloading && !reloadPlaying)
+            StartCoroutine(PlayReloadDrop(gun.reloadTime));
     }
 
-    IEnumerator PlayFireOnce()
+    System.Collections.IEnumerator PlayFireOnce()
     {
         playing = true;
         float dt = 1f / Mathf.Max(1f, fireFps);
@@ -50,13 +76,36 @@ public class WeaponSpriteOverlay : MonoBehaviour
         playing = false;
     }
 
-    // 👇 This is the method your HitScanGun should call
-    public void TriggerFire()
+    System.Collections.IEnumerator PlayReloadDrop(float duration)
     {
-        if (!playing)
+        reloadPlaying = true;
+
+        Vector2 start = restPos;
+        Vector2 down  = restPos + new Vector2(0f, -reloadDropPx);
+
+        float t = 0f;
+        // go down first half, up second half
+        while (t < duration)
         {
-            playing = true;
-            StartCoroutine(PlayFireOnce());
+            float p = Mathf.Clamp01(t / duration);
+            float half = 0.5f;
+
+            if (p < half)
+            {
+                float k = reloadCurve.Evaluate(p / half);
+                rt.anchoredPosition = Vector2.LerpUnclamped(start, down, k);
+            }
+            else
+            {
+                float k = reloadCurve.Evaluate((p - half) / half);
+                rt.anchoredPosition = Vector2.LerpUnclamped(down, start, k);
+            }
+
+            t += Time.deltaTime;
+            yield return null;
         }
+
+        rt.anchoredPosition = restPos;
+        reloadPlaying = false;
     }
 }

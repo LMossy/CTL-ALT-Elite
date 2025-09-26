@@ -5,25 +5,34 @@ public class ProjectileGun : MonoBehaviour
 {
     [Header("Refs")]
     public Camera playerCam;
-    public Transform muzzle;                  // optional, for barrel position
-    public GameObject bulletPrefab;           // assign your Bullet prefab here
-    public AudioSource fireAudio;             // optional
+    public Transform muzzle;
+    public GameObject bulletPrefab;
+    public AudioSource fireAudio;
 
     [Header("Fire Settings")]
     public bool automatic = true;
-    public float fireRate = 10f;              // shots per second
-    public float muzzleVelocity = 80f;        // speed of bullet
-    public float spreadDegrees = 0.5f;        // small cone of spread
-    public float maxLifeSeconds = 3f;         // bullet lifetime
+    public float fireRate = 10f;
+    public float muzzleVelocity = 80f;
+    public float spreadDegrees = 0.5f;
+    public float maxLifeSeconds = 3f;
 
     [Header("Ammo Settings")]
+    public bool unlimitedAmmo = false;   // ← NEW
     public int magSize = 30;
     public int reserveAmmo = 120;
     public float reloadTime = 1.2f;
 
+    [Header("Damage Override (optional)")]
+    public int damageOverride = -1;      // if >=0, sets Bullet.damage on spawn
+
+    [Header("Animator (optional)")]
+    public Animator animator;            // set if your 3D gun has animations
+    public string fireTrigger = "Fire";
+    public string reloadTrigger = "Reload";
+
     [Header("Input")]
-    public InputAction fire;                  // bind to <Mouse>/leftButton
-    public InputAction reload;                // bind to Keyboard/r
+    public InputAction fire;
+    public InputAction reload;
 
     int ammo;
     bool reloading;
@@ -32,7 +41,7 @@ public class ProjectileGun : MonoBehaviour
     void Awake()
     {
         if (!playerCam) playerCam = Camera.main;
-        ammo = magSize;
+        ammo = unlimitedAmmo ? int.MaxValue : magSize;
     }
 
     void OnEnable()
@@ -63,25 +72,20 @@ public class ProjectileGun : MonoBehaviour
 
     void Shoot()
     {
-        if (ammo <= 0)
+        if (!unlimitedAmmo && ammo <= 0)
         {
             StartReload();
             return;
         }
 
-        ammo--;
+        if (!unlimitedAmmo) ammo--;
 
         if (fireAudio) fireAudio.Play();
+        if (animator && !string.IsNullOrEmpty(fireTrigger)) animator.SetTrigger(fireTrigger);
 
-        // Direction from camera center with spread
         Transform cam = playerCam.transform;
         Vector3 dir = ApplySpread(cam.forward, spreadDegrees, cam);
-
-        // ✅ Spawn in front of the camera to avoid hitting the player
-        Vector3 pos = muzzle
-            ? muzzle.position
-            : cam.position + cam.forward * 0.5f;
-
+        Vector3 pos = muzzle ? muzzle.position : cam.position + cam.forward * 0.5f;
         Quaternion rot = Quaternion.LookRotation(dir);
 
         GameObject go = Instantiate(bulletPrefab, pos, rot);
@@ -90,6 +94,7 @@ public class ProjectileGun : MonoBehaviour
         {
             b.Init(dir * muzzleVelocity);
             b.maxLife = maxLifeSeconds;
+            if (damageOverride >= 0) b.damage = damageOverride; // assumes your Bullet has 'damage'
         }
     }
 
@@ -103,8 +108,11 @@ public class ProjectileGun : MonoBehaviour
 
     void StartReload()
     {
+        if (unlimitedAmmo) return; // nothing to reload
         if (reloading || reserveAmmo <= 0 || ammo == magSize) return;
+
         reloading = true;
+        if (animator && !string.IsNullOrEmpty(reloadTrigger)) animator.SetTrigger(reloadTrigger);
         Invoke(nameof(FinishReload), reloadTime);
     }
 
@@ -118,7 +126,7 @@ public class ProjectileGun : MonoBehaviour
     }
 
     // Expose ammo for UI
-    public int AmmoInMag => ammo;
-    public int ReserveAmmo => reserveAmmo;
+    public int AmmoInMag => unlimitedAmmo ? int.MaxValue : ammo;
+    public int ReserveAmmo => unlimitedAmmo ? int.MaxValue : reserveAmmo;
     public bool IsReloading => reloading;
 }
