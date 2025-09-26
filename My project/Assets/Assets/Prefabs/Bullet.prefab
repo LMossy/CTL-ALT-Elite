@@ -198,7 +198,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!96 &6477162862426677286
 TrailRenderer:
   serializedVersion: 3
@@ -315,7 +315,7 @@ TrailRenderer:
     generateLightingData: 0
   m_MinVertexDistance: 0.25
   m_MaskInteraction: 0
-  m_Autodestruct: 0
+  m_Autodestruct: 1
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
 --- !u!114 &3867421353115000343
@@ -330,5 +330,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a23f4a7a2e8276244bce859aa6a0506a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damage: 25
   maxLife: 3
+  damage: 25
+  hitVfxPrefab: {fileID: 0}
+  hitVfxLifetime: 2
